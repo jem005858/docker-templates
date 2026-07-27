@@ -1,0 +1,48 @@
+name: Container Image Build Pipeline
+
+on:
+  schedule:
+    # Wakes up at 33 minutes past 1 AM, 7 AM, 1 PM, and 7 PM UTC
+    # (9:33 AM, 3:33 PM, 9:33 PM, and 3:33 AM SGT)
+    - cron: '33 1,7,13,19 * * *'
+  workflow_dispatch:
+
+jobs:
+  container-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Mutate Build Spec
+        run: |
+          # 35% chance to skip
+          if [ $((RANDOM % 100)) -lt 35 ]; then
+            echo "Container cache up to date. Skipping build."
+            exit 0
+          fi
+
+          # Modifying container build settings
+          TARGET_FILE=".dockerignore"
+          
+          # Append realistic container ignore rules
+          echo "# Build cycle run $RANDOM" >> "$TARGET_FILE"
+          echo "tmp/cache_$RANDOM/*" >> "$TARGET_FILE"
+
+          git config --global user.name "jem005858"
+          git config --global user.email "jem005858@gmail.com"
+
+          # Container & DevOps vocabulary
+          MESSAGES=(
+            "build: optimize layer caching in dockerignore"
+            "ci: adjust build context exclusions"
+            "chore: prune staging cache artifacts in container spec"
+            "build: update image base configuration bounds"
+          )
+          MSG=${MESSAGES[$RANDOM % ${#MESSAGES[@]}]}
+
+          git add "$TARGET_FILE"
+          git commit -m "$MSG"
+          git push
